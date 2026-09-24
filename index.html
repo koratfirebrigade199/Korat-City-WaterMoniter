@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบติดตามระดับน้ำและแจ้งเตือนภัยน้ำท่วม - เทศบาลนครนครราชสีมา</title>
+    <!-- Tailwind CSS & Chart.js -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                            dark: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+
+    <!-- Top Header -->
+    <header class="bg-gradient-to-r from-brand-900 via-brand-700 to-blue-800 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-white/10 rounded-lg">
+                    <i class="fa-solid font-bold fa-shield-halved text-3xl text-cyan-300"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-bold tracking-tight">ระบบติดตามระดับน้ำและแจ้งเตือนภัยน้ำท่วม</h1>
+                    <p class="text-xs md:text-sm text-cyan-100">งานศูนย์ป้องกันและบรรเทาสาธารณภัย เทศบาลนครนครราชสีมา</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-full text-xs sm:text-sm backdrop-blur-md">
+                <i class="fa-regular fa-clock text-cyan-300"></i>
+                <span>อัปเดตล่าสุด: <span id="last-update-time">กำลังโหลด...</span></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Notification Banner -->
+    <div id="alert-banner" class="bg-amber-500 text-white px-4 py-3 shadow-md transition-all">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <span class="animate-ping relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                </span>
+                <span id="alert-status-text" class="font-semibold text-sm sm:text-base">
+                    สถานะการเฝ้าระวัง: เฝ้าระวังระดับน้ำปกติในลำน้ำลำตะคอง
+                </span>
+            </div>
+            <span class="text-xs bg-black/20 px-3 py-1 rounded-full uppercase tracking-wider font-bold" id="alert-level-badge">ปกติ</span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- AI Assistant Command Support Section -->
+        <section class="bg-gradient-to-br from-slate-900 to-brand-900 text-white rounded-2xl p-5 md:p-6 shadow-xl border border-cyan-500/30">
+            <div class="flex items-center gap-3 mb-4 border-b border-cyan-500/30 pb-3">
+                <i class="fa-solid fa-brain text-cyan-400 text-2xl animate-pulse"></i>
+                <div>
+                    <h2 class="text-lg md:text-xl font-bold text-cyan-300">AI ประเมินผลอัจฉริยะเพื่อสนับสนุนการตัดสินใจ (Incident Command AI)</h2>
+                    <p class="text-xs text-slate-300">วิเคราะห์ข้อมูลฝน ระดับน้ำลำตะคอง และปริมาณน้ำเขื่อนแบบเรียลไทม์</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div class="bg-white/10 p-4 rounded-xl border border-white/10">
+                    <span class="text-xs text-cyan-200 block mb-1 font-semibold"><i class="fa-solid fa-chart-line mr-1"></i>ผลการวิเคราะห์แนวโน้ม</span>
+                    <p id="ai-trend-analysis" class="text-slate-100">กำลังประมวลผลข้อมูลลำน้ำและปริมาณฝน...</p>
+                </div>
+                <div class="bg-white/10 p-4 rounded-xl border border-white/10">
+                    <span class="text-xs text-amber-300 block mb-1 font-semibold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>ระดับความเสี่ยง</span>
+                    <p id="ai-risk-assessment" class="text-slate-100">กำลังประเมินพื้นที่จุดเสี่ยงกระทบ...</p>
+                </div>
+                <div class="bg-white/10 p-4 rounded-xl border border-white/10">
+                    <span class="text-xs text-emerald-300 block mb-1 font-semibold"><i class="fa-solid fa-bullhorn mr-1"></i>ข้อเสนอแนะการสั่งการ</span>
+                    <p id="ai-command-recommendation" class="text-slate-100">ข้อเสนอแนะสำหรับผู้อำนวยการศูนย์ ปภ.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dam & Water Overview Cards -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Dam Storage Card -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase">เขื่อนลำตะคอง</p>
+                        <h3 class="text-2xl font-bold text-slate-800 mt-1" id="dam-volume">-- ล้าน ม.³</h3>
+                    </div>
+                    <div class="p-3 bg-blue-100 text-brand-700 rounded-xl">
+                        <i class="fa-solid fa-water text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <div class="flex justify-between text-xs text-slate-600 mb-1">
+                        <span>% ความจุอ่าง</span>
+                        <span id="dam-percent" class="font-bold">--%</span>
+                    </div>
+                    <div class="w-full bg-slate-200 rounded-full h-2">
+                        <div id="dam-bar" class="bg-brand-500 h-2 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inflow / Outflow -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase">การระบายน้ำเขื่อน (Outflow)</p>
+                        <h3 class="text-2xl font-bold text-emerald-600 mt-1" id="dam-outflow">-- ล้าน ม.³/วัน</h3>
+                    </div>
+                    <div class="p-3 bg-emerald-100 text-emerald-700 rounded-xl">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-xl"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-4">น้ำไหลเข้าอ่าง (Inflow): <span id="dam-inflow" class="font-semibold text-slate-700">--</span> ล้าน ม.³/วัน</p>
+            </div>
+
+            <!-- Si Khiu Station M.177 -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase">สถานี M.177 อ.สีคิ้ว</p>
+                        <h3 class="text-2xl font-bold text-brand-700 mt-1" id="m177-level">-- ม.รทก.</h3>
+                    </div>
+                    <div class="p-3 bg-cyan-100 text-cyan-700 rounded-xl">
+                        <i class="fa-solid fa-gauge-high text-xl"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-4">ระดับตลิ่ง: <span class="font-semibold text-slate-700">243.300 ม.รทก.</span></p>
+            </div>
+
+            <!-- VIP Bridge Station M.164 -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase">สถานี M.164 สะพาน VIP</p>
+                        <h3 class="text-2xl font-bold text-brand-700 mt-1" id="m164-level">-- ม.รทก.</h3>
+                    </div>
+                    <div class="p-3 bg-indigo-100 text-indigo-700 rounded-xl">
+                        <i class="fa-solid fa-bridge text-xl"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-4">ระดับตลิ่ง: <span class="font-semibold text-slate-700">177.600 ม.รทก.</span></p>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Hydro Graph -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-area text-brand-500"></i>
+                        ระดับน้ำลุ่มน้ำลำตะคอง (เทียบระดับตลิ่ง)
+                    </h3>
+                    <span class="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-slate-600">รายชั่วโมง</span>
+                </div>
+                <div class="h-64 sm:h-80 relative">
+                    <canvas id="waterLevelChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Rainfall Graph -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-showers-heavy text-cyan-500"></i>
+                        ปริมาณน้ำฝนสะสม เขตเทศบาลนครนครราชสีมา
+                    </h3>
+                    <span class="text-xs bg-slate-100 px-2.5 py-1 rounded-md text-slate-600">Update ทุก 1 ชม.</span>
+                </div>
+                <div class="h-64 sm:h-80 relative">
+                    <canvas id="rainChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Risk Areas Grid (6 Strategic Zones) -->
+        <section>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-location-dot text-red-500"></i>
+                    ข้อมูลแจ้งเตือนเฝ้าระวัง 6 พื้นที่เสี่ยงน้ำท่วม
+                </h3>
+                <span class="text-xs text-slate-500">อ้างอิงระดับน้ำสถานี M.191 ละลมหม้อ & M.164 สะพาน VIP</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="community-cards-container">
+                <!-- Javascript will dynamically render 6 community zone cards here -->
+            </div>
+        </section>
+
+        <!-- CRUD / Data Management Section -->
+        <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-brand-700"></i>
+                    ระบบจัดการข้อมูล/แก้ไขอัปเดตข้อมูลภาคสนาม (CRUD)
+                </h3>
+                <span class="text-xs bg-blue-50 text-brand-700 px-3 py-1 rounded-full font-medium">เจ้าหน้าที่ ปภ.</span>
+            </div>
+            
+            <form id="data-edit-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">เลือกจุดตรวจวัด / พื้นที่</label>
+                    <select id="input-station" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                        <option value="M177">สถานี M.177 อ.สีคิ้ว</option>
+                        <option value="M191">สถานี M.191 อาคารแบ่งน้ำละลมหม้อ</option>
+                        <option value="M164">สถานี M.164 สะพาน VIP</option>
+                        <option value="RAIN">ปริมาณฝนสะสมเทศบาลนครฯ</option>
+                        <option value="DAM">เขื่อนลำตะคอง</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">ค่าระดับน้ำ (ม.รทก.) / ปริมาณฝน (มม.)</label>
+                    <input type="number" step="0.01" id="input-value" placeholder="กรอกค่าตัวเลข..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">หมายเหตุ / สถานการณ์ภาคสนาม</label>
+                    <input type="text" id="input-note" placeholder="เช่น ติดตั้งเครื่องสูบน้ำเพิ่ม..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+                </div>
+                <div class="md:col-span-3 flex justify-end gap-3 mt-2">
+                    <button type="button" onclick="resetForm()" class="px-4 py-2 text-sm border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-100">รีเซ็ต</button>
+                    <button type="submit" class="px-5 py-2 text-sm bg-brand-700 text-white rounded-lg hover:bg-brand-900 transition flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูลปรับปรุง
+                    </button>
+                </div>
+            </form>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 text-center text-xs mt-12">
+        <p>© 2026 ศูนย์ป้องกันและบรรเทาสาธารณภัย เทศบาลนครนครราชสีมา ( Korat City Disaster Prevention and Mitigation )</p>
+        <p class="mt-1 text-slate-500">เชื่อมโยงข้อมูลจาก สทนช. (ThaiWater), กรมชลประทาน (RID) และสถาบันสารสนเทศทรัพยากรน้ำ (HII)</p>
+    </footer>
+
+    <!-- JavaScript App Logic -->
+    <script src="js/app.js"></script>
+    <script src="js/ai-engine.js"></script>
+</body>
+</html>

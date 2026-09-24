@@ -1,0 +1,37 @@
+name: Auto Water Data Fetcher
+
+on:
+  schedule:
+    # รันทุก 1 ชั่วโมง
+    - cron: '0 * * * *'
+    # รันเวลา 08:30 น. (UTC 01:30) สำหรับข้อมูลเขื่อน
+    - cron: '30 1 * * *'
+  workflow_dispatch:
+
+jobs:
+  build-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 pandas gspread google-auth
+
+      - name: Fetch Water Data
+        run: python scripts/fetch_water_data.py
+
+      - name: Commit and Push Updated Data
+        run: |
+          git config --global user.name "Korat-Disaster-Bot"
+          git config --global user.email "disaster@nakhonratchasima.go.th"
+          git add data/latest_data.json
+          git diff-index --quiet HEAD || git commit -m "Auto-update water & rain data [skip ci]"
+          git push
